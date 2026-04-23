@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include "maps.h"
 
 #include "Textures/T_1.h"
 #include "Textures/end.h"
@@ -11,15 +12,15 @@
 #include "Textures/press.h"
 
 typedef struct {
-	int w,a,d,s;
+	int w,a,d,s,p,l;
 }ButtonKeys; ButtonKeys Keys;
 
 typedef struct {
     int x, y, w, h;       // Position and size
-    int *tex_normal;      // Pointer to the "Press" array
-    int *tex_hold;        // Pointer to the "Hold" array
+    int *tex_normal;      // Pointer to the "Press" 
+    int *tex_hold;        // Pointer to the "Hold" 
     int state;            // 0 = Normal, 1 = Hover/Pressed
-    void (*action)();     // A "Function Pointer" for what the button does, dont remember why i even made this
+    void (*action)();     // a function pointer i forgot 
 } MenuButton;
 
 int All_Textures[] = {
@@ -241,41 +242,7 @@ void drawPlayer()
 }
 
 int mapX=8,mapY=8,mapS=64;
-int mapW[]=
-{
-	1,1,1,1,1,2,2,2,
-	1,0,0,1,0,0,0,2,
-	1,0,0,4,0,0,0,1,
-	1,1,4,1,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,2,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,1,1,1,1,1,1,1,
-};
 
-int mapF[]=
-{
-	1,1,1,1,1,1,1,1,
-	1,0,0,1,0,0,0,1,
-	1,0,0,1,0,0,0,1,
-	1,1,1,1,0,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,0,0,0,1,0,0,1,
-	1,0,0,0,0,0,0,1,
-	1,1,1,1,1,1,1,1,	
-};
-
-int mapC[]=
-{
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,
-};
 
 /*
 void drawMap2D()
@@ -285,7 +252,7 @@ void drawMap2D()
 	{
 		for(x=0;x<mapX;x++)
 		{
-			if(mapW[y*mapX+x]>0) {glColor3f(0,0,1);} 
+			if(currentMapW[y*mapX+x]>0) {glColor3f(0,0,1);} 
 			else{glColor3f(1,1,1);}
 			xo=x*mapS;
 			yo=y*mapS;
@@ -302,7 +269,7 @@ void drawMap2D()
 
 float dist(float ax, float ay, float bx, float by, float ang)
  {
- 	return (sqrt((bx-ax)*(bx-ax)+(by-ay)*(by-ay)));
+ 	return (sqrt((bx-ax)*(bx-ax)+(by-ay)*(by-ay)));                        //distance between two points
  }
 
 void drawRays3D()
@@ -337,7 +304,7 @@ void drawRays3D()
 			mx=(int)(rx)>>6;
 			my=(int)(ry)>>6;
 			mp=my*mapX+mx;
-			if(mp>0 && mp<mapX*mapY && mapW[mp]>0){ hmt=mapW[mp]-1; hx=rx; hy=ry; disH=dist(px,py,hx,hy,ra); dof=8;} //hit vall.
+			if(mp>0 && mp<mapX*mapY && currentMapW[mp]>0){ hmt=currentMapW[mp]-1; hx=rx; hy=ry; disH=dist(px,py,hx,hy,ra); dof=8;} //hit vall.
 			else{ rx+=xo; ry+= yo; dof+=1;}
 		}
 
@@ -353,7 +320,7 @@ void drawRays3D()
 			mx=(int)(rx)>>6;
 			my=(int)(ry)>>6;
 			mp=my*mapX+mx;
-			if(mp>0 && mp<mapX*mapY && mapW[mp]>0){ vmt=mapW[mp]-1; vx=rx; vy=ry; disV=dist(px,py,vx,vy,ra); dof=8;} //hit wall.
+			if(mp>0 && mp<mapX*mapY && currentMapW[mp]>0){ vmt=currentMapW[mp]-1; vx=rx; vy=ry; disV=dist(px,py,vx,vy,ra); dof=8;} //hit wall.
 			else{ rx+=xo; ry+= yo; dof+=1;}
 		}
 		float shade=1;
@@ -407,7 +374,7 @@ void drawRays3D()
 			ty+=ty_step;
 		}
 
-		          											//----------DRAW FLOORS mapF & CEILING mapC--------
+		          											//----------DRAW FLOORS currentMapF & CEILING mapC--------
 		//once per ray
 		float raFix = cos(pa - ra); // fisheye
 		float cosRa = cos(ra);
@@ -425,13 +392,13 @@ void drawRays3D()
     			int pixelY = (int)(ty) & 31;
 
     														// --- DRAW FLOOR ---
-    		int floorTex = mapF[mapPos] * 1024; // 32*32 = 1024
+    		int floorTex = currentMapF[mapPos] * 1024; // 32*32 = 1024
     		float cF = All_Textures[pixelY * 32 + pixelX + floorTex] * 0.7;
     		glColor3f(cF/1.3, cF/1.3, cF); 
     		glPointSize(16); glBegin(GL_POINTS); glVertex2i(r*16, y); glEnd();
 
     														// --- DRAW CEILING ---
-    		int ceilTex = mapC[mapPos] * 1024;
+    		int ceilTex = currentMapC[mapPos] * 1024;
     		float cC = All_Textures[pixelY * 32 + pixelX + ceilTex] * 0.7;
     		glColor3f(cC/2.0, cC/1.2, cC/2.0);
    		glPointSize(16); glBegin(GL_POINTS); glVertex2i(r*16, 639-y); glEnd();
@@ -449,6 +416,72 @@ void drawRays3D()
 	
 }
 
+
+
+
+int meltOffsets[960];
+int isMelting = 0;
+int *meltBuffer = NULL; //store the screenshot
+
+void startMelt() {
+	int i;
+    for(i=0; i<960; i++) {
+        // random delay/offset
+        meltOffsets[i] = -(rand() % 100); 
+    }
+    isMelting = 1;
+}
+
+void drawMelt() {
+    int x, y;
+    glBegin(GL_POINTS); // Set point size to 1 before the loop if needed
+    for(x=0; x<960; x++) {
+        // If the offset is greater than 640, this column is finished.
+        if (meltOffsets[x] >= 640) continue; 
+
+        for(y=0; y<640; y++) {
+            int targetY = y + meltOffsets[x];
+            
+            // Only draw if the pixel is still on the visible screen area
+            if(targetY >= 0 && targetY < 640) {
+                int pixel = (y * 960 + x) * 3;
+                glColor3ub(meltBuffer[pixel], meltBuffer[pixel+1], meltBuffer[pixel+2]);
+                glVertex2i(x, targetY);
+            }
+        }
+
+        // Move the column down for the next frame
+        // Using a slightly more consistent speed helps the "sliding" feel
+        meltOffsets[x] += (rand() % 5) + 5; 
+    }
+    glEnd();
+}
+/*
+void captureScreen() {
+    if(meltBuffer == NULL) {
+        meltBuffer = malloc(960 * 640 * 3 * sizeof(int));
+    }
+    // This reads the actual rendered screen into your buffer
+    // Note: glReadPixels uses unsigned char, so you might need to adjust meltBuffer type
+    glReadPixels(0, 0, 960, 640, GL_RGB, GL_UNSIGNED_BYTE, meltBuffer);
+}
+*/
+
+
+
+void captureScreen() {
+    if(meltBuffer == NULL) {
+        meltBuffer = malloc(960 * 640 * 3 * sizeof(int));
+    }
+    
+    int i;
+    //copy the pixels from the current 
+    for(i = 0; i < 960 * 640 * 3; i++) {
+        meltBuffer[i] = Maintitle[i];
+    }
+}
+
+
 int gameState = 0;
 int timer = 0;
 
@@ -456,12 +489,18 @@ void startGame()  { gameState = 2;}
 void quitGame()   { exit(0);      }
 void openOptions(){}
 
+void triggerMelt() {
+    captureScreen();
+    startMelt();
+    gameState = 3; // Change to the melting state
+}
+
 
 MenuButton buttons[3];
 
 void initButtons(){
 	//Start
-	buttons[0] = (MenuButton){400, 200, 160, 70, press, hold, 0, startGame};
+	buttons[0] = (MenuButton){400, 200, 160, 70, press, hold, 0, triggerMelt};
 	
 	buttons[1] = (MenuButton){400, 300, 160, 70, press, hold, 0, openOptions};
 	
@@ -471,7 +510,6 @@ void initButtons(){
 	
 	buttons[2] = (MenuButton){400, 400, 160, 70, press, hold, 0, quitGame};
 }
-
 
 
 void ButtonDown(unsigned char key, int x, int y){
@@ -490,10 +528,14 @@ void ButtonDown(unsigned char key, int x, int y){
 		int ipy=py/64.0;
 		int ipy_add_yo = (py+yo)/64.0;
 		
-		if(mapW[ipy_add_yo*mapX+ipx_add_xo]==4) {
-			mapW[ipy_add_yo*mapX+ipx_add_xo] = 0;
+		if(currentMapW[ipy_add_yo*mapX+ipx_add_xo]==4) {
+			currentMapW[ipy_add_yo*mapX+ipx_add_xo] = 0;
 		}
 	}
+	
+	if (key == 'p'){saveGame();}
+	if (key == 'l'){loadGame();}
+	
 	
 	/*if(button == GLUT_LEFT_BUTTON && state == GLUT_DOWN){
 		
@@ -539,16 +581,6 @@ void mouseClick(int button, int state, int x, int y){
 			}
 		}
 		
-		
-		
-		
-		
-		
-		/*
-		if(state == GLUT_UP && x > 400 && x < 560 && y > 300 && y < 370){
-			gameState = 2;
-		}
-		*/
 	}
 glutPostRedisplay();
 }
@@ -618,8 +650,92 @@ void drawButton(float x, float y, float w, float h, float r, float g, float b) {
 
 float frame1,frame2,fps; 
 
+
+int currentLevel = 0;
+void saveGame() {
+    FILE *f = fopen("save.dat", "w");
+    if (f == NULL) {
+        printf("Error: Could not create save file!\n");
+        return;
+    }
+    // using gameState 2 (gameplay) as the defaultfor loading
+    fprintf(f, "%d %f %f %f", currentLevel, px, py, pa);
+    fclose(f);
+    printf("Game Saved.\n");
+}
+
+void loadGame() {
+    FILE *f = fopen("save.dat", "r");
+    if (f == NULL) {
+        printf("No save file found.\n");
+        return;
+    }
+    float tempX, tempY, tempA;
+    int tempL;
+
+    if (fscanf(f, "%d %f %f %f", &tempL, &tempX, &tempY, &tempA) == 4) {
+        currentLevel = tempL;
+        px = tempX;
+        py = tempY;
+        pa = tempA;
+        
+        // uppdate the pointers to the correct level data
+        loadLevel(currentLevel);
+        
+        //direction vectors
+        pdx = cos(pa) * 5;
+        pdy = sin(pa) * 5;
+        
+        gameState = 2; // gameplay
+    }
+    fclose(f);
+    printf("Game Loaded.\n");
+}
+
+
+
 void display()
 {
+	
+	
+	
+	int mapX_pos = (int)px >> 6;
+	int mapY_pos = (int)py >> 6;
+
+	int currentLevel = 0;
+	if(currentMapW[mapY_pos * mapX + mapX_pos] == 2) {
+    	currentLevel++; 
+    	loadLevel(currentLevel);                             //updates the pointers in maps.c
+    
+    
+    	px = 300; 
+    	py = 300; 
+    
+    
+    	triggerMelt(); 
+}
+	
+	
+	if(currentMapW[mapY_pos * mapX + mapX_pos] == 2) {
+    currentLevel++; 
+    if(currentLevel > 2) {
+        gameState = 4;                                  //intermission from doom
+    } else {
+        loadLevel(currentLevel);
+        px = 300;                                    //reset player position for new level
+        py = 300;
+        saveGame();                                 // Auto-save, you are welcome... Ill get rid of this actually
+        triggerMelt(); 
+    }
+}
+	
+	
+	
+	
+	
+	
+	
+	
 	//frames per second(FPS)
 	frame2=glutGet(GLUT_ELAPSED_TIME);
 	fps = (frame2-frame1);
@@ -669,7 +785,25 @@ void display()
 		*/
 	}
 	
-	if(gameState == 2) {                   
+	if(gameState == 3){          //this is the melting state
+		drawRays3D();
+		drawMelt();
+		
+		int finished = 1;
+		int i;
+		for(i=0;i<960;i++){
+			if(meltOffsets[i]<640){
+				finished = 0;
+				break;
+			}
+		}
+		
+		if(finished){
+			gameState = 2;
+		}
+	}
+	
+	if(gameState == 2) {         //gaemplay state          
 		
 			
 	// || Buttons ||
@@ -691,14 +825,15 @@ void display()
 	
 	
 	if(Keys.w==1){ 
-		if(mapW[ipy*mapX        + ipx_add_xo] == 0) { px+=pdx*0.06*fps;}
-		if(mapW[ipy_add_yo*mapX + ipx       ] == 0) { py+=pdy*0.06*fps;}
+		if(currentMapW[ipy*mapX        + ipx_add_xo] == 0) { px+=pdx*0.06*fps;}
+		if(currentMapW[ipy_add_yo*mapX + ipx       ] == 0) { py+=pdy*0.06*fps;}
 	}
 	
 	if(Keys.s==1){ 
-		if(mapW[ipy*mapX        + ipx_sub_xo] == 0) { px-=pdx*0.02*fps;}
-		if(mapW[ipy_sub_yo*mapX + ipx       ] == 0) { py-=pdy*0.02*fps;}
+		if(currentMapW[ipy*mapX        + ipx_sub_xo] == 0) { px-=pdx*0.02*fps;}
+		if(currentMapW[ipy_sub_yo*mapX + ipx       ] == 0) { py-=pdy*0.02*fps;}
 	}
+	
 	
 	
 	
@@ -708,14 +843,19 @@ void display()
 	
 //	drawMap2D();
 //	drawPlayer();
-	drawRays3D();	
+	drawRays3D();
+
+	
 	}
+	
+	
 	
 	glutPostRedisplay();
 	glutSwapBuffers();
 
 	
 }
+
 
 void resize(int w, int h) {
 	glutReshapeWindow(960,640);
