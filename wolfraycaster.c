@@ -16,10 +16,10 @@ typedef struct {
 }ButtonKeys; ButtonKeys Keys;
 
 typedef struct {
-    int x, y, w, h;       // Position and size
-    int *tex_normal;      // Pointer to the "Press" 
-    int *tex_hold;        // Pointer to the "Hold" 
-    int state;            // 0 = Normal, 1 = Hover/Pressed
+    int x, y, w, h;       //
+    int *tex_normal;      // to the "Press" 
+    int *tex_hold;        // to the "Hold" 
+    int state;            // 0 = Normal ----- 1 = Hover/Pressed
     void (*action)();     // a function pointer i forgot 
 } MenuButton;
 
@@ -434,24 +434,19 @@ void startMelt() {
 
 void drawMelt() {
     int x, y;
-    glBegin(GL_POINTS); // Set point size to 1 before the loop if needed
+    glBegin(GL_POINTS); // Set point size to 1 before the loop
     for(x=0; x<960; x++) {
-        // If the offset is greater than 640, this column is finished.
         if (meltOffsets[x] >= 640) continue; 
 
         for(y=0; y<640; y++) {
             int targetY = y + meltOffsets[x];
-            
-            // Only draw if the pixel is still on the visible screen area
             if(targetY >= 0 && targetY < 640) {
                 int pixel = (y * 960 + x) * 3;
                 glColor3ub(meltBuffer[pixel], meltBuffer[pixel+1], meltBuffer[pixel+2]);
                 glVertex2i(x, targetY);
             }
         }
-
-        // Move the column down for the next frame
-        // Using a slightly more consistent speed helps the "sliding" feel
+        // the speed of the wiping, i cant do it i just cant
         meltOffsets[x] += (rand() % 5) + 5; 
     }
     glEnd();
@@ -475,7 +470,7 @@ void captureScreen() {
     }
     
     int i;
-    //copy the pixels from the current 
+    //copy
     for(i = 0; i < 960 * 640 * 3; i++) {
         meltBuffer[i] = Maintitle[i];
     }
@@ -658,7 +653,6 @@ void saveGame() {
         printf("Error: Could not create save file!\n");
         return;
     }
-    // using gameState 2 (gameplay) as the defaultfor loading
     fprintf(f, "%d %f %f %f", currentLevel, px, py, pa);
     fclose(f);
     printf("Game Saved.\n");
@@ -696,9 +690,7 @@ void loadGame() {
 
 void display()
 {
-	
-	
-	
+
 	int mapX_pos = (int)px >> 6;
 	int mapY_pos = (int)py >> 6;
 
@@ -715,26 +707,18 @@ void display()
     	triggerMelt(); 
 }
 	
-	
 	if(currentMapW[mapY_pos * mapX + mapX_pos] == 2) {
-    currentLevel++; 
-    if(currentLevel > 2) {
-        gameState = 4;                                  //intermission from doom
-    } else {
-        loadLevel(currentLevel);
-        px = 300;                                    //reset player position for new level
-        py = 300;
-        saveGame();                                 // Auto-save, you are welcome... Ill get rid of this actually
-        triggerMelt(); 
-    }
+    		currentLevel++; 
+    		if(currentLevel > 2) {
+        			gameState = 4;                                  //intermission from doom
+    		} else {
+        			loadLevel(currentLevel);
+        			px = 300;                                    //reset player position for new level
+        			py = 300;
+        			saveGame();                                 // Auto-save, you are welcome... Ill get rid of this actually
+        			triggerMelt(); 
+    		}
 }
-	
-	
-	
-	
-	
-	
-	
 	
 	//frames per second(FPS)
 	frame2=glutGet(GLUT_ELAPSED_TIME);
@@ -833,13 +817,6 @@ void display()
 		if(currentMapW[ipy*mapX        + ipx_sub_xo] == 0) { px-=pdx*0.02*fps;}
 		if(currentMapW[ipy_sub_yo*mapX + ipx       ] == 0) { py-=pdy*0.02*fps;}
 	}
-	
-	
-	
-	
-	
-	
-	
 	
 //	drawMap2D();
 //	drawPlayer();
