@@ -23,6 +23,13 @@ typedef struct {
     void (*action)();     // a function pointer i forgot 
 } MenuButton;
 
+
+typedef struct {
+    float x, y, z;
+} Sprite;
+
+Sprite sp[1] = { {400, 300, 20} };
+
 int All_Textures[] = {
 //32x32 size
 // Bricks
@@ -348,7 +355,7 @@ void drawRays3D()
 		int y;
 		float ty=ty_off*ty_step; //+hmt*32;
 		float tx;
-  		if(shade==1){ tx=(int)(rx/2.0)%32; if(ra>180){ tx=31-tx;}}  
+		if(shade==1){ tx=(int)(rx/2.0)%32; if(ra>180){ tx=31-tx;}}  
   		else        { tx=(int)(ry/2.0)%32; if(ra>90 && ra<270){ tx=31-tx;}}
 		for(y=0;y<lineH;y++){
 		
@@ -419,6 +426,7 @@ void drawRays3D()
 
 
 
+
 int meltOffsets[960];
 int isMelting = 0;
 int *meltBuffer = NULL; //store the screenshot
@@ -451,18 +459,16 @@ void drawMelt() {
     }
     glEnd();
 }
+
 /*
 void captureScreen() {
     if(meltBuffer == NULL) {
         meltBuffer = malloc(960 * 640 * 3 * sizeof(int));
     }
     // This reads the actual rendered screen into your buffer
-    // Note: glReadPixels uses unsigned char, so you might need to adjust meltBuffer type
     glReadPixels(0, 0, 960, 640, GL_RGB, GL_UNSIGNED_BYTE, meltBuffer);
 }
 */
-
-
 
 void captureScreen() {
     if(meltBuffer == NULL) {
@@ -489,8 +495,6 @@ void triggerMelt() {
     startMelt();
     gameState = 3; // Change to the melting state
 }
-
-
 MenuButton buttons[3];
 
 void initButtons(){
@@ -527,7 +531,6 @@ void ButtonDown(unsigned char key, int x, int y){
 			currentMapW[ipy_add_yo*mapX+ipx_add_xo] = 0;
 		}
 	}
-	
 	if (key == 'p'){saveGame();}
 	if (key == 'l'){loadGame();}
 	
@@ -601,6 +604,36 @@ void drawButtonTexture(int x, int y, int *texture){
 	glEnd();
 }
 
+                                               // I CANT FUCKING DO THIS OH MY GOD FUCK MY LIFE WHY CANT I DO IT I TRIED  EVERYTHING A IFFUCK IM GONNA KILL MYSELF
+void drawSprite() {
+   
+    float sx = sp[0].x - px;
+    float sy = sp[0].y - py;
+    
+  
+    float CS = cos(pa), SN = sin(pa);
+    float rotX = sy * CS - sx * SN; 
+    float rotY = sx * CS + sy * SN; 
+
+   
+    if (rotY > 0.1) { 
+        // 4. Perspective Projection
+        float screenX = (rotX * 640.0 / rotY) + 480; 
+        float screenY = (32.0 * 640.0 / rotY) + 320; // 32.0 sprite height offset
+
+        float spriteSize = (64.0 * 640.0) / rotY; 
+
+       
+        if(spriteSize > 640) spriteSize = 640; 
+        if(spriteSize < 2)   spriteSize = 0;          
+
+        glPointSize(spriteSize); 
+        glColor3ub(255, 255, 0); 
+        glBegin(GL_POINTS); 
+        glVertex2i(screenX, screenY); 
+        glEnd();
+    }
+}
 
 
 void screen(int v) {
@@ -629,8 +662,10 @@ void init()
 	py=300;
 	pdx=cos(pa)*5;
 	pdy=sin(pa)*5;
-	
 }
+
+
+
 
 void drawButton(float x, float y, float w, float h, float r, float g, float b) {
     glColor3f(r, g, b);
@@ -685,8 +720,6 @@ void loadGame() {
     fclose(f);
     printf("Game Loaded.\n");
 }
-
-
 
 void display()
 {
@@ -821,8 +854,7 @@ void display()
 //	drawMap2D();
 //	drawPlayer();
 	drawRays3D();
-
-	
+	drawSprite();
 	}
 	
 	
@@ -832,6 +864,8 @@ void display()
 
 	
 }
+
+
 
 
 void resize(int w, int h) {
@@ -856,3 +890,4 @@ int main(int argc, char* argv[])
 	glutKeyboardUpFunc(ButtonUp);
 	glutMainLoop();
 }
+
