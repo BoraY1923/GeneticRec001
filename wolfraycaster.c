@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "maps.h"
+#include "config.h"
 
 #include "Textures/T_1.h"
 #include "Textures/end.h"
@@ -24,11 +25,6 @@ typedef struct {
 } MenuButton;
 
 
-typedef struct {
-    float x, y, z;
-} Sprite;
-
-Sprite sp[1] = { {400, 300, 20} };
 
 int All_Textures[] = {
 //32x32 size
@@ -230,6 +226,7 @@ int All_Textures[] = {
 
 float degToRad(float a) { return a*M_PI/180.0;}
 float FixAng(float a) { if(a>359){ a-=360;} if(a<0){ a+=360;} return a;}
+float depthBuffer[105]; // 105 matches your maximum ray count
 
 float px,py,pdx,pdy,pa; //player position
 
@@ -346,6 +343,7 @@ void drawRays3D()
 		//--------3D WALLS--------
 		
 		float ca=pa-ra; if(ra<0){ra+=2*PI;} if(ra>2*PI){ra-=2*PI;} disT=disT*cos(ca);
+		depthBuffer[r] = disT;
 		float lineH=(mapS*640)/disT;
 		float ty_step=32.0/(float)lineH;
 		float ty_off=0;
@@ -425,6 +423,71 @@ void drawRays3D()
 
 
 
+
+void sortSprites(Sprite* sprites, int count) {
+    int i, j;
+    for(i = 0; i < count - 1; i++) {
+        for(j = 0; j < count - i - 1; j++) {
+            if(sprites[j].dist < sprites[j+1].dist) {
+                Sprite temp = sprites[j];
+                sprites[j] = sprites[j+1];
+                sprites[j+1] = temp;
+            }
+        }
+    }
+}
+
+void drawSprite(float sx, float sy) {						//I cant do anything right, this is why i have no friends because IM SUCKA A FUCKING RETARDED IDIOT WHERE IS THAT DAUUIB Ç DYNV FYCJUBG LINE THAT BLUE LINE WHERE DOES IT COME FROM FUCK MY LIFE FUCK I SHOULDVE ACTIUALLY KILLED  SELF
+    float dx = sx - px;
+    float dy = sy - py;
+    float dist = sqrt(dx * dx + dy * dy);
+    float spriteAngle = atan2(dy, dx);
+    float angleDiff = spriteAngle - pa;
+
+
+    while (angleDiff < -PI) angleDiff += 2 * PI;
+    while (angleDiff > PI) angleDiff -= 2 * PI;
+
+    float rayIndex = (angleDiff + (30.0 * DR)) / DR;
+
+    if (cos(angleDiff) > 0.2) {
+
+        float correctedDist = dist * cos(angleDiff);
+
+
+        float spriteH = (mapS * 640.0) / correctedDist;
+
+        float lineO = 320 - spriteH / 2.0; 
+        float spriteTop = lineO;
+        float spriteBottom = lineO + spriteH;
+
+        float spriteW = spriteH / 16.0; 
+
+        int startRay = (int)(rayIndex - spriteW / 2.0);
+        int endRay = (int)(rayIndex + spriteW / 2.0);
+
+  
+        int r;
+        for (r = startRay; r <= endRay; r++) {
+            if (r >= 0 && r < 105) { 
+                if (correctedDist < depthBuffer[r]) { 
+                    glPointSize(16);
+                    glColor3ub(0, 0, 255); 
+                    glBegin(GL_POINTS);
+                    int y;
+                    for (y = (int)spriteTop; y < (int)spriteBottom; y++) {
+                        if (y >= 0 && y < 640) { 
+                            glVertex2i(r * 16, y);
+                        }
+                    }
+                    glEnd();
+                    
+                }
+            }
+        }
+    }
+}
+   
 
 
 int meltOffsets[960];
@@ -605,35 +668,6 @@ void drawButtonTexture(int x, int y, int *texture){
 }
 
                                                // I CANT FUCKING DO THIS OH MY GOD FUCK MY LIFE WHY CANT I DO IT I TRIED  EVERYTHING A IFFUCK IM GONNA KILL MYSELF
-void drawSprite() {
-   
-    float sx = sp[0].x - px;
-    float sy = sp[0].y - py;
-    
-  
-    float CS = cos(pa), SN = sin(pa);
-    float rotX = sy * CS - sx * SN; 
-    float rotY = sx * CS + sy * SN; 
-
-   
-    if (rotY > 0.1) { 
-        // 4. Perspective Projection
-        float screenX = (rotX * 640.0 / rotY) + 480; 
-        float screenY = (32.0 * 640.0 / rotY) + 320; // 32.0 sprite height offset
-
-        float spriteSize = (64.0 * 640.0) / rotY; 
-
-       
-        if(spriteSize > 640) spriteSize = 640; 
-        if(spriteSize < 2)   spriteSize = 0;          
-
-        glPointSize(spriteSize); 
-        glColor3ub(255, 255, 0); 
-        glBegin(GL_POINTS); 
-        glVertex2i(screenX, screenY); 
-        glEnd();
-    }
-}
 
 
 void screen(int v) {
@@ -723,7 +757,15 @@ void loadGame() {
 
 void display()
 {
-
+	int i;
+	for(i = 0; i < currentSpriteCount; i++) {
+    		float dx = currentSprites[i].x - px;
+    		float dy = currentSprites[i].y - py;
+    		currentSprites[i].dist = (dx * dx) + (dy * dy); 
+	}
+	
+	
+	
 	int mapX_pos = (int)px >> 6;
 	int mapY_pos = (int)py >> 6;
 
@@ -854,7 +896,7 @@ void display()
 //	drawMap2D();
 //	drawPlayer();
 	drawRays3D();
-	drawSprite();
+	drawSprite(256.0,256.0);
 	}
 	
 	
