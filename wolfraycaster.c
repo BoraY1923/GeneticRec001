@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdbool.h>
 #include "maps.h"
 #include "config.h"
 
@@ -424,6 +425,17 @@ void drawRays3D()
 
 
 
+
+
+
+
+
+
+
+//                                                                                     SPRITES
+
+
+
 void sortSprites(Sprite* sprites, int count) {
     int i, j;
     for(i = 0; i < count - 1; i++) {
@@ -437,58 +449,94 @@ void sortSprites(Sprite* sprites, int count) {
     }
 }
 
-void drawSprite(float sx, float sy) {						//I cant do anything right, this is why i have no friends because IM SUCKA A FUCKING RETARDED IDIOT WHERE IS THAT DAUUIB Ç DYNV FYCJUBG LINE THAT BLUE LINE WHERE DOES IT COME FROM FUCK MY LIFE FUCK I SHOULDVE ACTIUALLY KILLED  SELF
+void drawSprite(float sx, float sy, int textureID)
+{
     float dx = sx - px;
     float dy = sy - py;
-    float dist = sqrt(dx * dx + dy * dy);
+    float spriteDist = sqrt(dx * dx + dy * dy);
     float spriteAngle = atan2(dy, dx);
     float angleDiff = spriteAngle - pa;
 
-
     while (angleDiff < -PI) angleDiff += 2 * PI;
-    while (angleDiff > PI) angleDiff -= 2 * PI;
+    while (angleDiff >  PI) angleDiff -= 2 * PI;
+
+    //Only draw if its in front of player
+    if (cos(angleDiff) <= 0.2) return;
+
+    float correctedDist = spriteDist * cos(angleDiff);
+    float spriteH = (mapS * 640.0) / correctedDist;
+    float spriteTop    = 320.0 - spriteH / 2.0;
+    float spriteBottom = 320.0 + spriteH / 2.0;
 
     float rayIndex = (angleDiff + (30.0 * DR)) / DR;
+    //spriteW in rays
+    float halfW = spriteH / 2.0 / 16.0;       //each ray is 16px wide
 
-    if (cos(angleDiff) > 0.2) {
+    int startRay = (int)(rayIndex - halfW);
+    int endRay   = (int)(rayIndex + halfW);
+    int totalRays = endRay - startRay + 1;
 
-        float correctedDist = dist * cos(angleDiff);
+    int r;
+    for (r = startRay; r <= endRay; r++)
+    {
+        if (r < 0 || r >= 105) continue;
+        if (correctedDist >= depthBuffer[r]) continue; // behind a wall
+        
+        //how far 
+        float u = (float)(r - startRay) / (float)(totalRays);
+        int tx = (int)(u * 32);   // 32 (width)
+        if (tx < 0)  tx = 0;
+        if (tx > 31) tx = 31;
 
+        glPointSize(16);
+        glBegin(GL_POINTS);
+        int y;
+        for (y = (int)spriteTop; y < (int)spriteBottom; y++)
+        {
+            if (y < 0 || y >= 640) continue;
 
-        float spriteH = (mapS * 640.0) / correctedDist;
+            
+            float v = (float)(y - spriteTop) / spriteH;
+            int ty = (int)(v * 32);
+            if (ty < 0)  ty = 0;
+            if (ty > 31) ty = 31;
 
-        float lineO = 320 - spriteH / 2.0; 
-        float spriteTop = lineO;
-        float spriteBottom = lineO + spriteH;
+            int pixel = (ty * 32 + tx) * 3;
+            int red   = T_1[pixel + 0];
+            int green = T_1[pixel + 1];
+            int blue  = T_1[pixel + 2];
 
-        float spriteW = spriteH / 16.0; 
+            if (red == 255 && green == 0 && blue == 255) continue; //The purple wont be rendered, very oldschool i know B)
 
-        int startRay = (int)(rayIndex - spriteW / 2.0);
-        int endRay = (int)(rayIndex + spriteW / 2.0);
-
-  
-        int r;
-        for (r = startRay; r <= endRay; r++) {
-            if (r >= 0 && r < 105) { 
-                if (correctedDist < depthBuffer[r]) { 
-                    glPointSize(16);
-                    glColor3ub(0, 0, 255); 
-                    glBegin(GL_POINTS);
-                    int y;
-                    for (y = (int)spriteTop; y < (int)spriteBottom; y++) {
-                        if (y >= 0 && y < 640) { 
-                            glVertex2i(r * 16, y);
-                        }
-                    }
-                    glEnd();
-                    
-                }
-            }
+            glColor3ub(red, green, blue);
+            glVertex2i(r * 16, y);
+            depthBuffer[r] = correctedDist;  //fixes the see through sprites
         }
+        glEnd();
     }
 }
-   
 
+int spriteBlocking(float newX, float newY) {
+    int i;
+    for (i = 0; i < currentSpriteCount; i++) {
+        if(!currentSprites[i].active) continue;
+        if(currentSprites[i].solid == true ) continue; //if it isnt solid then skip this function
+        float sx = currentSprites[i].x * 64.0;
+        float sy = currentSprites[i].y * 64.0;
+        float dx = newX - sx;
+        float dy = newY - sy;
+        float dist = sqrt(dx*dx + dy*dy);
+        if (dist < 30.0) return 1;  // 30px radius, works nicely but can be adjudted if you want to become one with the wall...
+    }
+    return 0;
+}
+   
+   
+   
+   
+   
+//                                                                                WIPING SCREEN
+ 
 
 int meltOffsets[960];
 int isMelting = 0;
@@ -544,6 +592,19 @@ void captureScreen() {
         meltBuffer[i] = Maintitle[i];
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+//                                                                       BUTTONS INITIALIZE
+
 
 
 int gameState = 0;
@@ -667,7 +728,20 @@ void drawButtonTexture(int x, int y, int *texture){
 	glEnd();
 }
 
+
+
+
                                                // I CANT FUCKING DO THIS OH MY GOD FUCK MY LIFE WHY CANT I DO IT I TRIED  EVERYTHING A IFFUCK IM GONNA KILL MYSELF
+
+
+
+
+
+
+
+
+
+
 
 
 void screen(int v) {
@@ -715,6 +789,14 @@ void drawButton(float x, float y, float w, float h, float r, float g, float b) {
 float frame1,frame2,fps; 
 
 
+
+
+
+
+
+
+//                                                                               SAVE-LOAD SYSTEM
+
 int currentLevel = 0;
 void saveGame() {
     FILE *f = fopen("save.dat", "w");
@@ -755,6 +837,17 @@ void loadGame() {
     printf("Game Loaded.\n");
 }
 
+
+
+
+
+
+
+
+
+
+
+
 void display()
 {
 	int i;
@@ -790,7 +883,7 @@ void display()
         			loadLevel(currentLevel);
         			px = 300;                                    //reset player position for new level
         			py = 300;
-        			saveGame();                                 // Auto-save, you are welcome... Ill get rid of this actually
+        			//saveGame();  No auto-save because fuck you!
         			triggerMelt(); 
     		}
 }
@@ -808,12 +901,12 @@ void display()
 	
 	//gameState
 	
-	if(gameState == 0){                  //init game
+	if(gameState == 0){                  					//init game
 		init();
 		timer = 0;
 		gameState = 1;
 	};
-			                //start the game
+			                					//start the game
 	if(gameState == 1){
 		screen(1);
 		// int buttonX = 400, buttonY = 300, buttonW = 160, buttonH = 70;// x position, y position, width of the button, height, and 3f colors
@@ -844,7 +937,7 @@ void display()
 		*/
 	}
 	
-	if(gameState == 3){          //this is the melting state
+	if(gameState == 3){          							//this is the melting state
 		drawRays3D();
 		drawMelt();
 		
@@ -862,7 +955,7 @@ void display()
 		}
 	}
 	
-	if(gameState == 2) {         //gaemplay state          
+	if(gameState == 2) {         								//gaemplay state          
 		
 			
 	// || Buttons ||
@@ -884,19 +977,35 @@ void display()
 	
 	
 	if(Keys.w==1){ 
-		if(currentMapW[ipy*mapX        + ipx_add_xo] == 0) { px+=pdx*0.06*fps;}
-		if(currentMapW[ipy_add_yo*mapX + ipx       ] == 0) { py+=pdy*0.06*fps;}
+		float newX = px + pdx*0.06*fps;
+		float newY = py + pdy*0.06*fps;
+		if(currentMapW[ipy*mapX + ipx_add_xo] == 0 && !spriteBlocking(newX, py)) { px = newX; }
+    		if(currentMapW[ipy_add_yo*mapX + ipx] == 0 && !spriteBlocking(px, newY)) { py = newY; }
+		//if(currentMapW[ipy*mapX        + ipx_add_xo] == 0) { px+=pdx*0.06*fps;}
+		//if(currentMapW[ipy_add_yo*mapX + ipx       ] == 0) { py+=pdy*0.06*fps;}
 	}
 	
 	if(Keys.s==1){ 
-		if(currentMapW[ipy*mapX        + ipx_sub_xo] == 0) { px-=pdx*0.02*fps;}
-		if(currentMapW[ipy_sub_yo*mapX + ipx       ] == 0) { py-=pdy*0.02*fps;}
+		float newX = px - pdx*0.06*fps;
+		float newY = py - pdy*0.06*fps;
+		if(currentMapW[ipy*mapX + ipx_sub_xo] == 0 && !spriteBlocking(newX, py)) { px = newX; }
+    		if(currentMapW[ipy_sub_yo*mapX + ipx] == 0 && !spriteBlocking(px, newY)) { py = newY; }
+		//if(currentMapW[ipy*mapX        + ipx_sub_xo] == 0) { px-=pdx*0.02*fps;}
+		//if(currentMapW[ipy_sub_yo*mapX + ipx       ] == 0) { py-=pdy*0.02*fps;}
 	}
 	
 //	drawMap2D();
 //	drawPlayer();
 	drawRays3D();
-	drawSprite(256.0,256.0);
+	sortSprites(currentSprites, currentSpriteCount);
+int i;
+for (i = 0; i < currentSpriteCount; i++) {
+    if (currentSprites[i].active) {
+        drawSprite(currentSprites[i].x * 64.0,   // convert map coords to world coords
+                   currentSprites[i].y * 64.0,
+                   currentSprites[i].textureID);
+    }
+}
 	}
 	
 	

@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include "maps.h"
 									// Level 1 Data
 int mapW_1[] = { 
@@ -27,11 +28,11 @@ int mapC_1[] = {
 	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0};
-Sprite sprites_1[] = 
+Sprite sprites_1[] =                 //
 {
-{2.5, 3.5, 0, 1},
-{5.5, 1.5, 0, 1},
-{4.5, 6.5, 0, 1,}
+
+{4.5, 3.5, 0, 1, true}, 
+
 };
 
 int spriteCount_1 = sizeof(sprites_1)/sizeof(sprites_1[0]);
@@ -65,7 +66,9 @@ int mapC_2[] = {
 	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0};
-	
+
+Sprite sprites_2[] = {};
+int spriteCount_2 = 0;	
 
 //active pointers
 
@@ -86,5 +89,7 @@ void loadLevel(int levelNum) {
         currentMapW = mapW_2;
         currentMapF = mapF_2;
         currentMapC = mapC_2;
+        currentSprites = sprites_2;
+        currentSpriteCount = spriteCount_2;
     }
 }

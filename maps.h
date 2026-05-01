@@ -1,5 +1,6 @@
 #ifndef MAPS_H
 #define MAPS_H
+#include <stdbool.h>
 
 typedef struct {
 	float x;
@@ -7,6 +8,7 @@ typedef struct {
 	int textureID;
 	int active;
 	float dist;
+	bool solid; // true = solid, false = ghost
 } Sprite;
 
 extern int *currentMapW;
