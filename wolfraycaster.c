@@ -227,7 +227,7 @@ int All_Textures[] = {
 
 float degToRad(float a) { return a*M_PI/180.0;}
 float FixAng(float a) { if(a>359){ a-=360;} if(a<0){ a+=360;} return a;}
-float depthBuffer[105]; // 105 matches your maximum ray count
+float depthBuffer[150]; // 105 matches your maximum ray count
 
 float px,py,pdx,pdy,pa; //player position
 
@@ -246,7 +246,7 @@ void drawPlayer()
 	glEnd();
 }
 
-int mapX=8,mapY=8,mapS=64;
+int mapX=20,mapY=20,mapS=64;
 
 
 /*
@@ -289,7 +289,7 @@ void drawRays3D()
 		 ra-=2*PI;
 	}
 	
-	for (r=0;r<105;r++) //60 rays, value can be increased or decreased !!!!!!!!!
+	for (r=0;r<105;r++) //105 rays, value can be increased or decreased !!!!!!!!!
 	{
 		//Vertical and horizontal map texture numbers 
 		int vmt=0;
@@ -304,13 +304,17 @@ void drawRays3D()
 		if(ra>PI){ ry=(((int)py>>6)<<6)-0.0001; rx=(py-ry)*aTan+px; yo=-64; xo=-yo*aTan; } //looking up
 		if(ra<PI){ ry=(((int)py>>6)<<6)+64    ; rx=(py-ry)*aTan+px; yo= 64; xo=-yo*aTan; }
 		if (ra==0 || ra==PI) { rx=px; ry=py; dof=8;}
-		while(dof<8) //I forgot what dof means, distance of focus? 
+		while(dof < 40) 
 		{
-			mx=(int)(rx)>>6;
-			my=(int)(ry)>>6;
-			mp=my*mapX+mx;
-			if(mp>0 && mp<mapX*mapY && currentMapW[mp]>0){ hmt=currentMapW[mp]-1; hx=rx; hy=ry; disH=dist(px,py,hx,hy,ra); dof=8;} //hit vall.
-			else{ rx+=xo; ry+= yo; dof+=1;}
+    			mx=(int)(rx)>>6;
+   			my=(int)(ry)>>6;
+    			mp=my*mapX+mx;
+    											// Safety check
+    			if(mx >= 0 && mx < mapX && my >= 0 && my < mapY && currentMapW[mp] > 0) 
+    			{ 
+        			hmt=currentMapW[mp]-1; hx=rx; hy=ry; disH=dist(px,py,hx,hy,ra); dof=40;
+    			} 
+    			else { rx+=xo; ry+=yo; dof+=1; }
 		}
 
 		//VERTICAL RAYS
@@ -320,63 +324,82 @@ void drawRays3D()
 		if(ra>P2 && ra<P3){ rx=(((int)px>>6)<<6)-0.0001; ry=(px-rx)*nTan+py; xo=-64; yo=-xo*nTan; } //looking up
 		if(ra<P2 || ra>P3){ rx=(((int)px>>6)<<6)+64    ; ry=(px-rx)*nTan+py; xo= 64; yo=-xo*nTan; }
 		if (ra==0 || ra==PI) { rx=px; ry=py; dof=8;}
-		while(dof<8)
+		
+		while(dof < 40) 
 		{
-			mx=(int)(rx)>>6;
-			my=(int)(ry)>>6;
-			mp=my*mapX+mx;
-			if(mp>0 && mp<mapX*mapY && currentMapW[mp]>0){ vmt=currentMapW[mp]-1; vx=rx; vy=ry; disV=dist(px,py,vx,vy,ra); dof=8;} //hit wall.
-			else{ rx+=xo; ry+= yo; dof+=1;}
+    		mx=(int)(rx)>>6;
+    		my=(int)(ry)>>6;
+    		mp=my*mapX+mx;
+    
+    		if(mx >= 0 && mx < mapX && my >= 0 && my < mapY && currentMapW[mp] > 0) 
+    		{ 
+        		vmt=currentMapW[mp]-1; //vmt for vertical
+        		vx=rx; vy=ry; 
+        		disV=dist(px,py,vx,vy,ra); 
+        		dof=40;
+    		} 
+    		else { rx+=xo; ry+=yo; dof+=1; }
 		}
+		
+		/*
+		while(dof < 40) 
+		{
+    			mx=(int)(rx)>>6;
+   			my=(int)(ry)>>6;
+    			mp=my*mapX+mx;
+    											// Safety check
+    			if(mx >= 0 && mx < mapX && my >= 0 && my < mapY && currentMapW[mp] > 0) 
+    			{ 
+        			hmt=currentMapW[mp]-1; hx=rx; hy=ry; disH=dist(px,py,hx,hy,ra); dof=40;
+    			} 
+    			else { rx+=xo; ry+=yo; dof+=1; }
+		}
+		*/
 		float shade=1;
 		glColor3f(0,0.8,0);
 		if(disV<disH){  hmt=vmt; shade=0.6; rx=vx; ry=vy; disT=disV; glColor3f(0.9,0,0);}
 		if(disH<disV){rx=hx; ry=hy;disT=disH; glColor3f(0.6,0,0);}
 		
-/* This draws the rays on the 2D map	
+		/* This draws the rays on the 2D map which is no longer needed	
 	
 		glLineWidth(3);
 		glBegin(GL_LINES);
 		glVertex2i(px,py);
 		glVertex2i(rx,ry);
 		glEnd();
-*/	
+		*/	
 		//--------3D WALLS--------
 		
 		float ca=pa-ra; if(ra<0){ra+=2*PI;} if(ra>2*PI){ra-=2*PI;} disT=disT*cos(ca);
 		depthBuffer[r] = disT;
 		float lineH=(mapS*640)/disT;
-		float ty_step=32.0/(float)lineH;
+		float ty_step=64.0/(float)lineH;
 		float ty_off=0;
+		int texIdx = (disV < disH) ? vmt : hmt;
+		int texOffset = texIdx * 4096; // 64x64=4096
+		
+		float tx;
+		if(disV < disH){tx = (int)(ry)%64;}
+		else           {tx = (int)(rx)%64;}
+		
 		if(lineH>640){ ty_off=(lineH-640)/2.0; lineH=640;}
 		float lineO=320-lineH/2;  //line Offset
 		
 		int y;
 		float ty=ty_off*ty_step; //+hmt*32;
-		float tx;
 		if(shade==1){ tx=(int)(rx/2.0)%32; if(ra>180){ tx=31-tx;}}  
   		else        { tx=(int)(ry/2.0)%32; if(ra>90 && ra<270){ tx=31-tx;}}
 		for(y=0;y<lineH;y++){
-		
-		/*	
-			float c = All_Textures[(int)(ty)*32 + (int)(tx)]*shade;
-			if(hmt==0) {glColor3f(c     ,c/2.0,c/2.0);}
-			if(hmt==1) {glColor3f(c     ,c    ,c/2.0);}
-			if(hmt==2) {glColor3f(c/2.0 ,c/2.0,c    );}
-			if(hmt==3) {glColor3f(c/2.0 ,c    ,c/2.0);}
-			if(hmt==4) {glColor3f(c,c,c);}
+			int pixel =((int)ty*64+(int)tx)+texOffset*3;
+			float c = T_1[pixel]*shade;
 			
-			glPointSize(8);
-			glBegin(GL_POINTS);
-			glVertex2i(r*8+530,y+lineO);
-			glEnd();
-		*/	
-			int pixel =((int)ty*32+(int)tx)*3;
+			/*
 			int red   = T_1[pixel+0]*shade;
 			int green = T_1[pixel+1]*shade;
 			int blue  = T_1[pixel+2]*shade;
-			
-			glPointSize(16); glColor3ub(red,green,blue); glBegin(GL_POINTS); glVertex2i(r*16,y+lineO); glEnd();
+			*/
+			// glPointSize(16); 
+			glColor3ub(c,c,c); glBegin(GL_POINTS); glVertex2i(r*16,y+lineO); glEnd();
 			ty+=ty_step;
 		}
 
@@ -398,14 +421,18 @@ void drawRays3D()
     			int pixelY = (int)(ty) & 31;
 
     														// --- DRAW FLOOR ---
-    		int floorTex = currentMapF[mapPos] * 1024; // 32*32 = 1024
-    		float cF = All_Textures[pixelY * 32 + pixelX + floorTex] * 0.7;
+    		int floorTex = (currentMapF[mapPos]-1) * 4096; // 32*32 = 1024
+    		if(mapPos < 0) mapPos = 0;
+		if(mapPos >= 400) mapPos = 399;
+    		float cF = T_1[pixelY * 64 + pixelX + floorTex] * 0.7;
     		glColor3f(cF/1.3, cF/1.3, cF); 
     		glPointSize(16); glBegin(GL_POINTS); glVertex2i(r*16, y); glEnd();
 
     														// --- DRAW CEILING ---
-    		int ceilTex = currentMapC[mapPos] * 1024;
-    		float cC = All_Textures[pixelY * 32 + pixelX + ceilTex] * 0.7;
+    		int ceilTex = (currentMapC[mapPos]-1) * 4096;
+    		if(mapPos < 0) mapPos = 0;
+		if(mapPos >= 400) mapPos = 399;
+    		float cC = T_1[pixelY * 64 + pixelX + ceilTex] * 0.7;
     		glColor3f(cC/2.0, cC/1.2, cC/2.0);
    		glPointSize(16); glBegin(GL_POINTS); glVertex2i(r*16, 639-y); glEnd();
 }
