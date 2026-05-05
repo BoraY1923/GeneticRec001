@@ -7,6 +7,7 @@
 #include "config.h"
 
 #include "Textures/T_1.h"
+#include "Textures/TS_1.h"
 #include "Textures/end.h"
 #include "Textures/start.h"
 #include "Textures/Maintitle.h"
@@ -387,19 +388,19 @@ void drawRays3D()
 		
 		int y;
 		float ty=ty_off*ty_step; //+hmt*32;
-		if(shade==1){ tx=(int)(rx/2.0)%32; if(ra>180){ tx=31-tx;}}  
-  		else        { tx=(int)(ry/2.0)%32; if(ra>90 && ra<270){ tx=31-tx;}}
+		if(shade==1){ tx=(int)(rx)%64; if(ra>180){ tx=63-tx;}}  
+  		else        { tx=(int)(ry)%64; if(ra>90 && ra<270){ tx=63-tx;}}
 		for(y=0;y<lineH;y++){
-			int pixel =((int)ty*64+(int)tx)+texOffset*3;
-			float c = T_1[pixel]*shade;
+			int pixel =((texIdx * 64 + (int)ty) * 64) + (int)tx*3;
+			//float c = T_1[pixel]*shade;
 			
-			/*
+			
 			int red   = T_1[pixel+0]*shade;
 			int green = T_1[pixel+1]*shade;
 			int blue  = T_1[pixel+2]*shade;
-			*/
+			
 			// glPointSize(16); 
-			glColor3ub(c,c,c); glBegin(GL_POINTS); glVertex2i(r*16,y+lineO); glEnd();
+			glColor3ub(red,green,blue); glBegin(GL_POINTS); glVertex2i(r*16,y+lineO); glEnd();
 			ty+=ty_step;
 		}
 
@@ -411,29 +412,35 @@ void drawRays3D()
 
 		for(y = lineO + lineH; y < 640; y++)
 		{
-    			float dy = y - 324.0; 
-    			float weight = (320.0 * 32.0) / (dy * raFix);
-    			float tx = px/2.0 + cosRa * weight;
-    			float ty = py/2.0 + sinRa * weight;
+    			float dy = y - 320.0; 
+    			float weight = (320.0) / (dy * raFix);
+    			float tx = px + cosRa * weight;
+    			float ty = py + sinRa * weight;
 
-    			int mapPos = ((int)(ty/32.0) * mapX) + (int)(tx/32.0);
-    			int pixelX = (int)(tx) & 31;
-    			int pixelY = (int)(ty) & 31;
+    			int mapPos = ((int)(ty/64.0) * mapX) + (int)(tx/64.0);
+    			int pixelX = (int)(tx) & 63;
+    			int pixelY = (int)(ty) & 63;
 
     														// --- DRAW FLOOR ---
-    		int floorTex = (currentMapF[mapPos]-1) * 4096; // 32*32 = 1024
-    		if(mapPos < 0) mapPos = 0;
-		if(mapPos >= 400) mapPos = 399;
+    		
+		if(mapPos < 0) mapPos = 0;
+		if(mapPos >= mapX*mapY)mapPos = mapX*mapY-1;
+		int floorIdx = currentMapF[mapPos] - 1;
+		if(floorIdx < 0) floorIdx = 0;
+		int floorTex = floorIdx * 4096; // 64*64 
+		//if(mapPos >= 400) mapPos = 399;
     		float cF = T_1[pixelY * 64 + pixelX + floorTex] * 0.7;
-    		glColor3f(cF/1.3, cF/1.3, cF); 
+    		glColor3f(0.5, 0.5, 0.5); 
     		glPointSize(16); glBegin(GL_POINTS); glVertex2i(r*16, y); glEnd();
 
-    														// --- DRAW CEILING ---
-    		int ceilTex = (currentMapC[mapPos]-1) * 4096;
-    		if(mapPos < 0) mapPos = 0;
-		if(mapPos >= 400) mapPos = 399;
+    		if(mapPos < 0) mapPos = 0;									// --- DRAW CEILING ---
+    		int ceilIdx = currentMapC[mapPos] - 1;
+		if(ceilIdx < 0) ceilIdx = 0;
+		int ceilTex = ceilIdx * 4096;
+    		if(mapPos >= mapX*mapY)mapPos = mapX*mapY-1;
+		//if(mapPos >= 400) mapPos = 399;
     		float cC = T_1[pixelY * 64 + pixelX + ceilTex] * 0.7;
-    		glColor3f(cC/2.0, cC/1.2, cC/2.0);
+    		glColor3f(0.3, 0.3, 0.3);
    		glPointSize(16); glBegin(GL_POINTS); glVertex2i(r*16, 639-y); glEnd();
 }
 		
@@ -448,14 +455,6 @@ void drawRays3D()
 	
 	
 }
-
-
-
-
-
-
-
-
 
 
 
@@ -528,10 +527,10 @@ void drawSprite(float sx, float sy, int textureID)
             if (ty < 0)  ty = 0;
             if (ty > 31) ty = 31;
 
-            int pixel = (ty * 32 + tx) * 3;
-            int red   = T_1[pixel + 0];
-            int green = T_1[pixel + 1];
-            int blue  = T_1[pixel + 2];
+            int pixel = ((textureID*32 + ty)*32+tx)*3;
+            int red   = S_1[pixel + 0];
+            int green = S_1[pixel + 1];
+            int blue  = S_1[pixel + 2];
 
             if (red == 255 && green == 0 && blue == 255) continue; //The purple wont be rendered, very oldschool i know B)
 
