@@ -377,6 +377,8 @@ void drawRays3D()
 		float ty_step=64.0/(float)lineH;
 		float ty_off=0;
 		int texIdx = (disV < disH) ? vmt : hmt;
+		if(texIdx < 0) texIdx = 0;
+		if(texIdx > 7) texIdx = 7;
 		int texOffset = texIdx * 4096; // 64x64=4096
 		
 		float tx;
@@ -388,10 +390,12 @@ void drawRays3D()
 		
 		int y;
 		float ty=ty_off*ty_step; //+hmt*32;
-		if(shade==1){ tx=(int)(rx)%64; if(ra>180){ tx=63-tx;}}  
-  		else        { tx=(int)(ry)%64; if(ra>90 && ra<270){ tx=63-tx;}}
+		if(shade==1){ tx=(int)(rx)%64; if(ra>PI){ tx=63-tx;}}  
+  		else        { tx=(int)(ry)%64; if(ra>PI*0.5 && ra<PI*1.5){ tx=63-tx;}}
 		for(y=0;y<lineH;y++){
-			int pixel =((texIdx * 64 + (int)ty) * 64) + (int)tx*3;
+			
+			int pixel =((texIdx * 64 + (int)ty) * 64 + (int)tx)*3;
+			//int pixel = ((textureID*32 + ty)*32+tx)*3;
 			//float c = T_1[pixel]*shade;
 			
 			
